@@ -175,6 +175,15 @@ public class JmdbTest {
     }
 
     /**
+     * Test of getCoverData method, of class Jmdb.
+     */
+    @Test
+    public void testGetCoverData() throws JmdbException {
+        System.out.println("getCoverData");
+        assertTrue(instance.getCoverData().length > 0);
+    }
+
+    /**
      * Test of getLanguage method, of class Jmdb.
      */
     @Test
@@ -289,7 +298,7 @@ public class JmdbTest {
     @Test
     public void testGetOfficialSites() throws Exception {
         System.out.println("getOfficialSites");
-        assertEquals(instance.getOfficialSites().size(), 4);
+        assertEquals(instance.getOfficialSites().size(), 2);
     }
 
     /**

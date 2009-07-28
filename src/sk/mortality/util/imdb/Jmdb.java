@@ -48,6 +48,7 @@ public class Jmdb {
     protected Set<Director> directors;
     protected Set<Writer> writers;
     protected String cover;
+    protected byte[] coverData;
     protected String[] language;
     protected String[] country;
     protected Rating rating;
@@ -184,6 +185,43 @@ public class Jmdb {
             this.cover = Parser.parseCover(this.response, t);
         }
         return this.cover;
+    }
+
+    public byte[] getCoverData() throws JmdbException {
+        byte[] data = null;
+        // parse cover URI
+        if (this.cover == null) {
+            this.getCover();
+        }
+        // no cover awaillable
+        if (this.cover == null) {
+            return data;
+        }
+
+        try {
+            URL requestURL  = new URL(this.cover);
+            String host     = requestURL.getHost();
+            String file     = requestURL.getFile();
+            int port        = requestURL.getPort();
+            port            = (port == -1) ? 80 : port;
+
+            log.debug("Getting HTTP response for cover image: "+requestURL.toString());
+            HTTPConnection connection = new HTTPConnection(host, port);
+            connection.setTimeout(Integer.parseInt(this.criteria.get("timeout")));
+            connection.setDefaultHeaders(new NVPair[] {new NVPair("User-Agent", this.criteria.get("user_agent")), new NVPair("Referer", this.criteria.get("referer"))});
+            connection.setAllowUserInteraction(false);
+            connection.removeModule(CookieModule.class);
+            HTTPResponse resp = connection.Get(file);
+            data = resp.getData();
+        } catch (MalformedURLException ex) {
+            throw new JmdbException("URL supplied for IMDB request is not valid URL", ex);
+        } catch (IOException ex) {
+            throw new JmdbException("Error while loading HTTP response", ex);
+        } catch (ModuleException ex) {
+            throw new JmdbException("Error while loading modules in HTTPClient", ex);
+        } 
+
+        return data;
     }
 
     public String[] getLanguage() {
