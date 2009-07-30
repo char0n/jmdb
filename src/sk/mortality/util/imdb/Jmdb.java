@@ -87,11 +87,11 @@ public class Jmdb {
     public void search(int movieID) throws JmdbException {
         log.debug("MovieID search commenced");
 
-        this.clean();
-        this.movieID  = movieID;
+        this.clean();        
         this.response = this.getHttpResponse(this.criteria.get("host")+this.criteria.get("movieID_query")+movieID);
         if (this.response.length() > 0 && this.response.indexOf("The URL (page) you requested could not be found.") == -1) {
-            this.status = Status.OK;
+            this.status   = Status.OK;
+            this.movieID  = movieID;
         } else {
             log.debug("Received zero length response");
             this.status = Status.KO;
@@ -328,6 +328,8 @@ public class Jmdb {
         Map<Integer, String> matches = null;
         String requestURL;
         String resp;
+        int imdbId;
+        String imdbTitle;
 
         try {
             requestURL = this.criteria.get("host") + this.criteria.get("search_query") + URLEncoder.encode(query, this.criteria.get("query_str_enc"));
@@ -336,7 +338,16 @@ public class Jmdb {
         }
 
         resp = this.getHttpResponse(requestURL);
-        matches  = Parser.parseTitles(resp);
+        if (resp.indexOf("<title>IMDb Search</title>") != -1) {
+            log.debug("Search page reached. Getting list of possible matches");
+            matches  = Parser.parseTitles(resp);
+        } else {
+            log.debug("Direct title match reached");
+            imdbId    = Parser.parseImdbId(resp);
+            imdbTitle = Parser.parseTitle(resp).get("title");
+            matches  = new HashMap<Integer, String>();
+            matches.put(imdbId, imdbTitle);
+        }
 
         return matches;
     }
@@ -443,6 +454,7 @@ public class Jmdb {
      */
     private static class Parser {
 
+        private static Pattern imdbIdPattern        = Pattern.compile("<link rel=\"canonical\" href=\"http://www.imdb.com/title/tt([0-9]+)/\" />");
         private static Pattern titlesPattern        = Pattern.compile("title/tt([0-9]{7})/';\">([^<]+)?</a> \\(([0-9]+)\\)");
         private static Pattern titlePattern         = Pattern.compile("<title>(.+)[ ]\\(([0-9]{4})\\)([^<]+)?</title>");
         private static Pattern plotPattern          = Pattern.compile("<h5>Plot:</h5>\\s(.+)?\\s<a class=\"tn15more inline\"");
@@ -463,6 +475,16 @@ public class Jmdb {
         private static Pattern goofsPattern         = Pattern.compile("<h5>Goofs:</h5>\\s(.+)?\\s<a class=\"tn15more inline\"");
         private static Pattern awardsPattern        = Pattern.compile("<h5>Awards:</h5>([^<]+)", Pattern.MULTILINE);
         private static Pattern officialSitesPattern = Pattern.compile("<li><a href=\"([^\"]+)\">([^<]+)</a></li>");
+
+        public static int parseImdbId(String data) {
+            Jmdb.log.debug("Parsing Imdb ID");
+            int imdbId = 0;
+            Matcher matcher = imdbIdPattern.matcher(data);
+            if (matcher.find()) {
+                imdbId = Integer.parseInt(matcher.group(1));
+            }
+            return imdbId;
+        }
 
         public static Map<Integer, String> parseTitles(String data) {
             Jmdb.log.debug("Parsing possigne title matches");
