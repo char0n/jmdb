@@ -5,6 +5,7 @@
 
 package sk.mortality.util.imdb;
 
+import java.util.Map;
 import java.util.Set;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -47,10 +48,14 @@ public class JmdbRunnerTest {
     @Test
     public void run() throws Exception {
         Jmdb api = new Jmdb();
-        api.search("We were soldiers");
+        api.search("i, robot");
         if (api.getStatus() == Status.KO) {
             System.out.println("No matches found");
             System.exit(0);
+        }
+        System.out.println("Matches: ");
+        for (String title : api.getMatchedTitles().values()) {
+            System.out.println(title);
         }
         System.out.println(api.getMovieID());
         System.out.println(api.getTitle());

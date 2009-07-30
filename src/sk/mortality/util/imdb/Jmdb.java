@@ -36,7 +36,7 @@ public class Jmdb {
 
     protected Integer movieID;
     protected String query;
-    protected Map<String, String> matched;
+    protected Map<Integer, String> matched;
     protected Status status;
     protected String response;
 
@@ -81,6 +81,7 @@ public class Jmdb {
         this.criteria.put("search_query" , "find?tt=on;mx=20;q=");
         this.criteria.put("query_str_enc", "UTF-8");
         this.criteria.put("timeout"      , "1000");
+        this.criteria.put("auto_parse"   , "true");
     }
 
     public void search(int movieID) throws JmdbException {
@@ -89,7 +90,7 @@ public class Jmdb {
         this.clean();
         this.movieID  = movieID;
         this.response = this.getHttpResponse(this.criteria.get("host")+this.criteria.get("movieID_query")+movieID);
-        if (this.response.length() > 0) {
+        if (this.response.length() > 0 && this.response.indexOf("The URL (page) you requested could not be found.") == -1) {
             this.status = Status.OK;
         } else {
             log.debug("Received zero length response");
@@ -115,11 +116,14 @@ public class Jmdb {
         log.debug("Using first match as movie title");
         this.status = Status.OK;
         int imdbID = 0;
-        for (String key : this.matched.keySet()) {
-            imdbID = Integer.parseInt(key);
+        // Don't fetch first result if auto_parse disabled
+        if (!this.criteria.get("auto_parse").equals("true")) {
+            return;
+        }
+        for (Integer key : this.matched.keySet()) {
+            imdbID = key;
             break;
         }
-
         this.search(imdbID);
     }
 
@@ -127,7 +131,7 @@ public class Jmdb {
         return this.status;
     }
 
-    public Map<String, String> getMatchedTitles() {
+    public Map<Integer, String> getMatchedTitles() {
         return this.matched;
     }
 
@@ -319,9 +323,9 @@ public class Jmdb {
         return this.officialSites;
     }
 
-    protected Map<String, String> getTitleMatches(String query) throws JmdbException {
+    protected Map<Integer, String> getTitleMatches(String query) throws JmdbException {
         log.debug("Getting possible IMDB title matches");
-        Map<String, String> matches = null;
+        Map<Integer, String> matches = null;
         String requestURL;
         String resp;
 
@@ -460,14 +464,14 @@ public class Jmdb {
         private static Pattern awardsPattern        = Pattern.compile("<h5>Awards:</h5>([^<]+)", Pattern.MULTILINE);
         private static Pattern officialSitesPattern = Pattern.compile("<li><a href=\"([^\"]+)\">([^<]+)</a></li>");
 
-        public static Map<String, String> parseTitles(String data) {
+        public static Map<Integer, String> parseTitles(String data) {
             Jmdb.log.debug("Parsing possigne title matches");
-            Map<String, String> matches = new LinkedHashMap<String, String>();
+            Map<Integer, String> matches = new LinkedHashMap<Integer, String>();
             Matcher matcher = titlesPattern.matcher(data);
 
             while (matcher.find()) {
                 if (!matches.containsKey(matcher.group(1))) {
-                    matches.put(matcher.group(1), htmlEntityDecode(matcher.group(2)));
+                    matches.put(Integer.parseInt(matcher.group(1)), htmlEntityDecode(matcher.group(2)));
                 }
             }
             return matches;

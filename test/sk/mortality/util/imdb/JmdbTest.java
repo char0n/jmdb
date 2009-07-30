@@ -98,7 +98,7 @@ public class JmdbTest {
     @Test
     public void testGetMatchedTitles() throws JmdbException {
         System.out.println("getMatchedTitles");
-        Map<String, String> result = instance.getMatchedTitles();
+        Map<Integer, String> result = instance.getMatchedTitles();
         assertTrue(result.size() > 0);
     }
 
