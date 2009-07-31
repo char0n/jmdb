@@ -180,7 +180,7 @@ public class JmdbTest {
     @Test
     public void testGetCoverData() throws JmdbException {
         System.out.println("getCoverData");
-        assertTrue(instance.getCoverData().length > 0);
+        assertTrue(instance.getCoverData().length == 7259);
     }
 
     /**

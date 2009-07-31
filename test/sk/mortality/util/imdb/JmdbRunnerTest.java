@@ -47,7 +47,7 @@ public class JmdbRunnerTest {
     @Test
     public void run() throws Exception {
         Jmdb api = new Jmdb();
-        api.search("Seven Pounds");
+        api.search("\"Robot Chicken\"");
         if (api.getStatus() == Status.KO) {
             System.out.println("No matches found");
             System.exit(0);

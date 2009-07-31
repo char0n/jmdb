@@ -113,13 +113,13 @@ public class Jmdb {
         }
 
         // Fetch first result
-        log.debug("Using first match as movie title");
         this.status = Status.OK;
         int imdbID = 0;
         // Don't fetch first result if auto_parse disabled
         if (!this.criteria.get("auto_parse").equals("true")) {
             return;
         }
+        log.debug("Using first match as movie title");
         for (Integer key : this.matched.keySet()) {
             imdbID = key;
             break;
@@ -185,8 +185,7 @@ public class Jmdb {
 
     public String getCover() {
         if (this.cover == null) {
-            String t = this.getTitle();
-            this.cover = Parser.parseCover(this.response, t);
+            this.cover = Parser.parseCover(this.response);
         }
         return this.cover;
     }
@@ -194,9 +193,8 @@ public class Jmdb {
     public byte[] getCoverData() throws JmdbException {
         byte[] data = null;
         // parse cover URI
-        if (this.cover == null) {
-            this.getCover();
-        }
+        this.getCover();
+
         // no cover awaillable
         if (this.cover == null) {
             return data;
@@ -338,7 +336,7 @@ public class Jmdb {
         }
 
         resp = this.getHttpResponse(requestURL);
-        if (resp.indexOf("<title>IMDb Search</title>") != -1) {
+        if (resp.indexOf("<title>IMDb Title Search</title>") != -1) {
             log.debug("Search page reached. Getting list of possible matches");
             matches  = Parser.parseTitles(resp);
         } else {
@@ -457,12 +455,12 @@ public class Jmdb {
         private static Pattern imdbIdPattern        = Pattern.compile("<link rel=\"canonical\" href=\"http://www.imdb.com/title/tt([0-9]+)/\" />");
         private static Pattern titlesPattern        = Pattern.compile("title/tt([0-9]{7})/';\">([^<]+)?</a> \\(([0-9]+)\\)");
         private static Pattern titlePattern         = Pattern.compile("<title>(.+)[ ]\\(([0-9]{4})\\)([^<]+)?</title>");
-        private static Pattern plotPattern          = Pattern.compile("<h5>Plot:</h5>\\s(.+)?\\s<a class=\"tn15more inline\"");
+        private static Pattern plotPattern          = Pattern.compile("<h5>Plot:</h5>\\s(.+?)\\s<a class=\"tn15more inline\"");
         private static Pattern fullPlotPattern      = Pattern.compile("<p class=\"plotpar\">([^<]+)<i>");
         private static Pattern castPattern          = Pattern.compile("<a href=\"/name/nm([0-9]{7})/\" onclick=\"[^\"]+\">([^<]+)</a></td><td class=\"ddd\"> ... </td><td class=\"char\">(<a href=\"/character/ch[0-9]{7}/\">)?([^<]+)");
         private static Pattern directorPattern      = Pattern.compile("/rg/directorlist/position\\-[0-9]+/images/b.gif\\?link=name/nm([0-9]{7})/';\">([^<]+)");
         private static Pattern writerPattern        = Pattern.compile("/rg/writerlist/position\\-[0-9]+/images/b.gif\\?link=name/nm([0-9]{7})/';\">([^<]+)");
-        private static Pattern coverPattern;
+        private static Pattern coverPattern         = Pattern.compile("<a name=\"poster\"[^>]+><img border=\"0\"[^>]+src=\"([^\"]+)\" /></a>");
         private static Pattern languagePattern      = Pattern.compile("<a href=\"/Sections/Languages/[^/]+/\">([^<]+)");
         private static Pattern countryPattern       = Pattern.compile("<a href=\"/Sections/Countries/[^/]+/\">([^<]+)");
         private static Pattern ratingPattern        = Pattern.compile("<b>([0-9]{1}\\.[0-9]{1})/10</b>\\s+&nbsp;&nbsp;<a href=\"ratings\" class=\"tn15more\">([^\\s]+) votes</a>");
@@ -471,8 +469,8 @@ public class Jmdb {
         private static Pattern akaPattern           = Pattern.compile("<h5>Also Known As:</h5>(.+)?<br>");
         private static Pattern certificationPattern = Pattern.compile("<a href=\"/List\\?certificates=[^\\&]+\\&\\&heading=[0-9]+;[^\"]+\">\\s([^:]+):([^<]+)</a>");
         private static Pattern runtimePattern       = Pattern.compile("<h5>Runtime:</h5>\\s([^<]+)\\s</div>");
-        private static Pattern triviaPattern        = Pattern.compile("<h5>Trivia:</h5>\\s(.+)?\\s<a class=\"tn15more inline\"");
-        private static Pattern goofsPattern         = Pattern.compile("<h5>Goofs:</h5>\\s(.+)?\\s<a class=\"tn15more inline\"");
+        private static Pattern triviaPattern        = Pattern.compile("<h5>Trivia:</h5>\\s(.+?)\\s<a class=\"tn15more inline\"");
+        private static Pattern goofsPattern         = Pattern.compile("<h5>Goofs:</h5>\\s(.+?)\\s<a class=\"tn15more inline\"");
         private static Pattern awardsPattern        = Pattern.compile("<h5>Awards:</h5>([^<]+)", Pattern.MULTILINE);
         private static Pattern officialSitesPattern = Pattern.compile("<li><a href=\"([^\"]+)\">([^<]+)</a></li>");
 
@@ -487,7 +485,7 @@ public class Jmdb {
         }
 
         public static Map<Integer, String> parseTitles(String data) {
-            Jmdb.log.debug("Parsing possigne title matches");
+            Jmdb.log.debug("Parsing possible title matches");
             Map<Integer, String> matches = new LinkedHashMap<Integer, String>();
             Matcher matcher = titlesPattern.matcher(data);
 
@@ -518,7 +516,7 @@ public class Jmdb {
             Matcher matcher = plotPattern.matcher(data);
 
             if (matcher.find()) {
-                plot = htmlEntityDecode(matcher.group(1).trim());
+                plot = htmlEntityDecode(matcher.group(1).replaceAll("<[^>]+>", "").trim());
             }
 
             return plot;
@@ -563,9 +561,9 @@ public class Jmdb {
             return writers;
         }
 
-        public static String parseCover(String data, String title) {
+        public static String parseCover(String data) {
             Jmdb.log.debug("Parsing cover image url");
-            coverPattern    = Pattern.compile("alt=\""+title+"\" title=\""+title+"\" src=\"([^\"]+)\"");
+            data = htmlEntityDecode(data);
             Matcher matcher = coverPattern.matcher(data);
             String cover    = null;
 
@@ -671,7 +669,7 @@ public class Jmdb {
             Matcher matcher = fullPlotPattern.matcher(data);
             String plot = null;
             if (matcher.find()) {
-                plot = htmlEntityDecode(matcher.group(1).trim());
+                plot = htmlEntityDecode(matcher.group(1).replaceAll("<[^>]+>", "").trim());
             }
             return plot;
         }
@@ -819,7 +817,7 @@ public class Jmdb {
             if (getClass() != obj.getClass()) {
                 return false;
             }
-            final Actor other = (Actor) obj;
+            final Person other = (Person) obj;
             if (this.id != other.id) {
                 return false;
             }
@@ -834,13 +832,12 @@ public class Jmdb {
 
         @Override
         public int hashCode() {
-            int hash = 5;
+            int hash = 7;
             hash = 47 * hash + this.id;
             hash = 47 * hash + (this.name != null ? this.name.hashCode() : 0);
             hash = 47 * hash + (this.character != null ? this.character.hashCode() : 0);
             return hash;
         }
-
     }
 
     public static class Actor extends Person {
