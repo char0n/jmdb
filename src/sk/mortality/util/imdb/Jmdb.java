@@ -200,6 +200,7 @@ public class Jmdb {
             return data;
         }
 
+        HTTPConnection connection = null;
         try {
             URL requestURL  = new URL(this.cover);
             String host     = requestURL.getHost();
@@ -208,7 +209,7 @@ public class Jmdb {
             port            = (port == -1) ? 80 : port;
 
             log.debug("Getting HTTP response for cover image: "+requestURL.toString());
-            HTTPConnection connection = new HTTPConnection(host, port);
+            connection = new HTTPConnection(host, port);
             connection.setTimeout(Integer.parseInt(this.criteria.get("timeout")));
             connection.setDefaultHeaders(new NVPair[] {new NVPair("User-Agent", this.criteria.get("user_agent")), new NVPair("Referer", this.criteria.get("referer"))});
             connection.setAllowUserInteraction(false);
@@ -221,7 +222,9 @@ public class Jmdb {
             throw new JmdbException("Error while loading HTTP response", ex);
         } catch (ModuleException ex) {
             throw new JmdbException("Error while loading modules in HTTPClient", ex);
-        } 
+        } finally {
+            if (connection != null) connection.stop();
+        }
 
         return data;
     }
@@ -351,7 +354,8 @@ public class Jmdb {
     }
 
     protected String getHttpResponse(String url) throws JmdbException {
-        String content = null;
+        String content            = null;
+        HTTPConnection connection = null;
 
         try {
             URL requestURL  = new URL(url);
@@ -361,7 +365,7 @@ public class Jmdb {
             port            = (port == -1) ? 80 : port;
 
             log.debug("Getting HTTP response for: "+url);
-            HTTPConnection connection = new HTTPConnection(host, port);
+            connection = new HTTPConnection(host, port);
             connection.setTimeout(Integer.parseInt(this.criteria.get("timeout")));
             connection.setDefaultHeaders(new NVPair[] {new NVPair("User-Agent", this.criteria.get("user_agent")), new NVPair("Referer", this.criteria.get("referer"))});
             connection.setAllowUserInteraction(false);
@@ -376,6 +380,8 @@ public class Jmdb {
             throw new JmdbException("Error while loading modules in HTTPClient", ex);
         } catch (ParseException ex) {
             throw new JmdbException("Error while parsing HTTP response", ex);
+        } finally {
+            if (connection != null) connection.stop();
         }
 
         return content;
