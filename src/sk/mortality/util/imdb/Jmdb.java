@@ -459,8 +459,8 @@ public class Jmdb {
     private static class Parser {
 
         private static Pattern imdbIdPattern        = Pattern.compile("<link rel=\"canonical\" href=\"http://www.imdb.com/title/tt([0-9]+)/\" />");
-        private static Pattern titlesPattern        = Pattern.compile("title/tt([0-9]{7})/';\">([^<]+)?</a> \\(([0-9]+)\\)");
-        private static Pattern titlePattern         = Pattern.compile("<title>(.+)[ ]\\(([0-9]{4})\\)([^<]+)?</title>");
+        private static Pattern titlesPattern        = Pattern.compile("title/tt([0-9]{7})/';\">([^<]+)?</a> \\(([0-9]+(\\/[^\\)]+)?)\\)");
+        private static Pattern titlePattern         = Pattern.compile("<title>(.+)[ ]\\(([0-9]{4})(\\/[^\\)]+)?\\)([^<]+)?</title>");
         private static Pattern plotPattern          = Pattern.compile("<h5>Plot:</h5>\\s(.+?)\\s<a class=\"tn15more inline\"");
         private static Pattern fullPlotPattern      = Pattern.compile("<p class=\"plotpar\">([^<]+)<i>");
         private static Pattern castPattern          = Pattern.compile("<a href=\"/name/nm([0-9]{7})/\" onclick=\"[^\"]+\">([^<]+)</a></td><td class=\"ddd\"> ... </td><td class=\"char\">(<a href=\"/character/ch[0-9]{7}/\">)?([^<]+)");

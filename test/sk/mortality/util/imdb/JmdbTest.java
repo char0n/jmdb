@@ -70,8 +70,13 @@ public class JmdbTest {
     @Test
     public void testSearch_String() throws Exception {
         System.out.println("search");
+        Map<Integer, String> matches;
         try {
             instance.search(query);
+            matches = instance.getMatchedTitles();
+            for (int key : matches.keySet()) {
+                System.out.println(key+" "+matches.get(key));
+            }
             if (!instance.status.equals(Jmdb.Status.OK)) {
                 throw new JmdbException("Error while getting imdb results");
             }
