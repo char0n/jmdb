@@ -80,7 +80,7 @@ public class Jmdb {
         this.criteria.put("movieID_query", "title/tt");
         this.criteria.put("search_query" , "find?tt=on;mx=20;q=");
         this.criteria.put("query_str_enc", "UTF-8");
-        this.criteria.put("timeout"      , "1000");
+        this.criteria.put("timeout"      , "1500");
         this.criteria.put("auto_parse"   , "true");
     }
 
@@ -132,7 +132,7 @@ public class Jmdb {
     }
 
     public Map<Integer, String> getMatchedTitles() {
-        return this.matched;
+        return new LinkedHashMap<Integer, String>(this.matched);
     }
 
     public int getMovieID() {
@@ -166,21 +166,21 @@ public class Jmdb {
         if (this.cast == null) {
             this.cast = Parser.parseCast(this.response);
         }
-        return this.cast;
+        return new HashSet<Actor>(this.cast);
     }
 
     public Set<Director> getDirectors() {
         if (this.directors == null) {
             this.directors = Parser.parseDirectors(this.response);
         }
-        return this.directors;
+        return new HashSet<Director>(this.directors);
     }
 
     public Set<Writer> getWriters() {
         if (this.writers == null) {
             this.writers = Parser.parseWriters(this.response);
         }
-        return this.writers;
+        return new HashSet<Writer>(this.writers);
     }
 
     public String getCover() {
@@ -191,13 +191,17 @@ public class Jmdb {
     }
 
     public byte[] getCoverData() throws JmdbException {
-        byte[] data = null;
         // parse cover URI
         this.getCover();
 
         // no cover awaillable
         if (this.cover == null) {
-            return data;
+            return null;
+        }
+
+        // Cover data already awaillable
+        if (this.coverData != null) {
+            return (byte[]) this.coverData.clone();
         }
 
         HTTPConnection connection = null;
@@ -215,7 +219,9 @@ public class Jmdb {
             connection.setAllowUserInteraction(false);
             connection.removeModule(CookieModule.class);
             HTTPResponse resp = connection.Get(file);
-            data = resp.getData();
+            if (resp.getStatusCode() == 200) {
+                this.coverData = resp.getData();
+            }
         } catch (MalformedURLException ex) {
             throw new JmdbException("URL supplied for IMDB request is not valid URL", ex);
         } catch (IOException ex) {
@@ -226,21 +232,25 @@ public class Jmdb {
             if (connection != null) connection.stop();
         }
 
-        return data;
+        byte[] toReturn = null;
+        if (this.coverData != null) {
+            toReturn = (byte[]) this.coverData.clone();
+        }
+        return toReturn;
     }
 
     public String[] getLanguage() {
         if (this.language == null) {
             this.language = Parser.parseLanguage(this.response);
         }
-        return this.language;
+        return (String[]) this.language.clone();
     }
 
     public String[] getCountry() {
         if (this.country == null) {
             this.country = Parser.parseCountry(this.response);
         }
-        return this.country;
+        return (String[]) this.country.clone();
     }
 
     public Rating getRating() {
@@ -254,7 +264,7 @@ public class Jmdb {
         if (this.genre == null) {
             this.genre = Parser.parseGenre(this.response);
         }
-        return this.genre;
+        return (String[]) this.genre.clone();
     }
 
     public String getTagline() {
@@ -268,14 +278,14 @@ public class Jmdb {
         if (this.aka == null) {
             this.aka = Parser.parseAka(this.response);
         }
-        return this.aka;
+        return (String[]) this.aka.clone();
     }
 
     public Set<Certificate> getCertifications() {
         if (this.certifications == null) {
             this.certifications = Parser.parseCertifications(this.response);
         }
-        return this.certifications;
+        return new HashSet<Certificate>(this.certifications);
     }
 
     public String getRuntime() {
@@ -321,7 +331,7 @@ public class Jmdb {
             String resp        = this.getHttpResponse(url);
             this.officialSites = Parser.parseOfficialSites(resp);
         }
-        return this.officialSites;
+        return new HashSet<OfficialSite>(this.officialSites);
     }
 
     protected Map<Integer, String> getTitleMatches(String query) throws JmdbException {
@@ -346,7 +356,7 @@ public class Jmdb {
             log.debug("Direct title match reached");
             imdbId    = Parser.parseImdbId(resp);
             imdbTitle = Parser.parseTitle(resp).get("title");
-            matches  = new HashMap<Integer, String>();
+            matches  = new LinkedHashMap<Integer, String>();
             matches.put(imdbId, imdbTitle);
         }
 
@@ -371,6 +381,9 @@ public class Jmdb {
             connection.setAllowUserInteraction(false);
             connection.removeModule(CookieModule.class);
             HTTPResponse resp = connection.Get(file);
+            if (resp.getStatusCode() != 200) {
+                throw new JmdbException("Response returned invalid status code: "+resp.getStatusCode());
+            }
             content        = resp.getText();
         } catch (MalformedURLException ex) {
             throw new JmdbException("URL supplied for IMDB request is not valid URL", ex);
@@ -380,6 +393,8 @@ public class Jmdb {
             throw new JmdbException("Error while loading modules in HTTPClient", ex);
         } catch (ParseException ex) {
             throw new JmdbException("Error while parsing HTTP response", ex);
+        } catch (JmdbException ex) {
+            throw new JmdbException(ex);
         } finally {
             if (connection != null) connection.stop();
         }
@@ -399,6 +414,7 @@ public class Jmdb {
         this.directors      = null;
         this.writers        = null;
         this.cover          = null;
+        this.coverData      = null;
         this.language       = null;
         this.country        = null;
         this.rating         = null;
@@ -430,7 +446,7 @@ public class Jmdb {
         public Criteria() { }
 
         public Criteria(Map<String, String> crit) {
-            this.crit = crit;
+            this.crit.putAll(crit);
         }
 
         public void put(String key, String value) {
@@ -442,7 +458,7 @@ public class Jmdb {
         }
 
         public Map<String, String> export() {
-            return this.crit;
+            return new HashMap<String, String>(this.crit);
         }
 
         public void append(Criteria c) {
@@ -461,7 +477,7 @@ public class Jmdb {
         private static Pattern imdbIdPattern        = Pattern.compile("<link rel=\"canonical\" href=\"http://www.imdb.com/title/tt([0-9]+)/\" />");
         private static Pattern titlesPattern        = Pattern.compile("title/tt([0-9]{7})/';\">([^<]+)?</a> \\(([0-9]+(\\/[^\\)]+)?)\\)");
         private static Pattern titlePattern         = Pattern.compile("<title>(.+)[ ]\\(([0-9]{4})(\\/[^\\)]+)?\\)([^<]+)?</title>");
-        private static Pattern plotPattern          = Pattern.compile("<h5>Plot:</h5>\\s(.+?)\\s<a class=\"tn15more inline\"");
+        private static Pattern plotPattern          = Pattern.compile("<h5>Plot:</h5>\\s<div class=\"info-content\">\\s(.+?)\\s<a class=\"tn15more inline\"");
         private static Pattern fullPlotPattern      = Pattern.compile("<p class=\"plotpar\">([^<]+)<i>");
         private static Pattern castPattern          = Pattern.compile("<a href=\"/name/nm([0-9]{7})/\" onclick=\"[^\"]+\">([^<]+)</a></td><td class=\"ddd\"> ... </td><td class=\"char\">(<a href=\"/character/ch[0-9]{7}/\">)?([^<]+)");
         private static Pattern directorPattern      = Pattern.compile("/rg/directorlist/position\\-[0-9]+/images/b.gif\\?link=name/nm([0-9]{7})/';\">([^<]+)");
@@ -471,13 +487,13 @@ public class Jmdb {
         private static Pattern countryPattern       = Pattern.compile("<a href=\"/Sections/Countries/[^/]+/\">([^<]+)");
         private static Pattern ratingPattern        = Pattern.compile("<b>([0-9]{1}\\.[0-9]{1})/10</b>\\s+&nbsp;&nbsp;<a href=\"ratings\" class=\"tn15more\">([^\\s]+) votes</a>");
         private static Pattern genrePattern         = Pattern.compile("<a href=\"/Sections/Genres/[^/]+/\">([^<]+)");
-        private static Pattern taglinePattern       = Pattern.compile("<h5>Tagline:</h5>\\s([^<]+)");
-        private static Pattern akaPattern           = Pattern.compile("<h5>Also Known As:</h5>(.+)?<br>");
+        private static Pattern taglinePattern       = Pattern.compile("<h5>Tagline:</h5>\\s<div class=\"info-content\">\\s([^<]+)");
+        private static Pattern akaPattern           = Pattern.compile("<h5>Also Known As:</h5><div class=\"info-content\">(.+)?<br>");
         private static Pattern certificationPattern = Pattern.compile("<a href=\"/List\\?certificates=[^\\&]+\\&\\&heading=[0-9]+;[^\"]+\">\\s([^:]+):([^<]+)</a>");
-        private static Pattern runtimePattern       = Pattern.compile("<h5>Runtime:</h5>\\s([^<]+)\\s</div>");
-        private static Pattern triviaPattern        = Pattern.compile("<h5>Trivia:</h5>\\s(.+?)\\s<a class=\"tn15more inline\"");
-        private static Pattern goofsPattern         = Pattern.compile("<h5>Goofs:</h5>\\s(.+?)\\s<a class=\"tn15more inline\"");
-        private static Pattern awardsPattern        = Pattern.compile("<h5>Awards:</h5>([^<]+)", Pattern.MULTILINE);
+        private static Pattern runtimePattern       = Pattern.compile("<h5>Runtime:</h5>\\s<div class=\"info-content\">\\s([^<]+)\\s</div>");
+        private static Pattern triviaPattern        = Pattern.compile("<h5>Trivia:</h5>\\s<div class=\"info-content\">\\s(.+?)\\s<a class=\"tn15more inline\"");
+        private static Pattern goofsPattern         = Pattern.compile("<h5>Goofs:</h5>\\s<div class=\"info-content\">\\s(.+?)\\s<a class=\"tn15more inline\"");
+        private static Pattern awardsPattern        = Pattern.compile("<h5>Awards:</h5>\\s<div class=\"info-content\">([^<]+)", Pattern.MULTILINE);
         private static Pattern officialSitesPattern = Pattern.compile("<li><a href=\"([^\"]+)\">([^<]+)</a></li>");
 
         public static int parseImdbId(String data) {
@@ -644,6 +660,8 @@ public class Jmdb {
                     aka    = new String[1];
                     aka[0] = akas;
                 }
+            } else {
+                aka = new String[0];
             }
             return aka;
         }
