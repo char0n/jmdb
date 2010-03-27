@@ -49,6 +49,7 @@ import org.apache.log4j.Logger;
 /**
  *
  * @author char0n
+ * @version 1.0b
  */
 public class Jmdb {
 
