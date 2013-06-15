@@ -56,73 +56,50 @@ public class JmdbTest {
         matches = instance.getMatchedTitles();
         assertEquals(10, matches.size());
     }
-//
-//    /**
-//     * Test of getStatus method, of class Jmdb.
-//     */
-//    @Test
-//    public void testGetStatus() throws Exception {
-//        System.out.println("getStatus");
-//        Jmdb instance1 = new Jmdb();
-//        if (instance1.getStatus() != null) {
-//            fail("Status should be null for unused Jmdb instance");
-//        }
-//    }
-//
-//    /**
-//     * Test of getMatchedTitles method, of class Jmdb.
-//     */
-//    @Test
-//    public void testGetMatchedTitles() throws JmdbException {
-//        System.out.println("getMatchedTitles");
-//        Map<Integer, String> result = instance.getMatchedTitles();
-//        assertTrue(result.size() > 0);
-//    }
-//
-//    /**
-//     * Test of getMovieID method, of class Jmdb.
-//     */
-//    @Test
-//    public void testGetMovieID() {
-//        System.out.println("getMovieID");
-//        assertEquals(movieID, instance.getMovieID());
-//    }
-//
-//    /**
-//     * Test of getTitle method, of class Jmdb.
-//     */
-//    @Test
-//    public void testGetTitle() {
-//        System.out.println("getTitle");
-//        assertEquals(query, instance.getTitle());
-//    }
-//
-//    /**
-//     * Test of getYear method, of class Jmdb.
-//     */
-//    @Test
-//    public void testGetYear() {
-//        System.out.println("getYear");
-//        assertEquals("2004", instance.getYear());
-//    }
-//
-//    /**
-//     * Test of getPlot method, of class Jmdb.
-//     */
-//    @Test
-//    public void testGetPlot() {
-//        System.out.println("getPlot");
-//        assertTrue(instance.getPlot().length() > 0);
-//    }
-//
-//    /**
-//     * Test of getCast method, of class Jmdb.
-//     */
-//    @Test
-//    public void testGetCast() {
-//        System.out.println("getCast");
-//        assertTrue(instance.getCast().size() > 0);
-//    }
+
+    @Test
+    public void testGetStatus() throws Exception {
+        Jmdb instance1 = new Jmdb();
+        assertNull(instance1.status);
+    }
+
+    @Test
+    public void testGetMatchedTitles() throws JmdbException {
+        this.instance.search("I Robot");
+        Map<Integer, String> result = this.instance.getMatchedTitles();
+        assertEquals(10, result.size());
+    }
+
+    @Test
+    public void testGetMovieID() throws JmdbException {
+        this.instance.search(movieID);
+        assertEquals(Jmdb.Status.OK, this.instance.getStatus());
+        assertEquals(movieID, this.instance.getMovieID());
+    }
+
+    @Test
+    public void testGetTitle() throws JmdbException {
+        this.instance.search(movieID);
+        assertEquals("Já, robot", this.instance.getTitle());
+    }
+
+    @Test
+    public void testGetYear() throws JmdbException {
+        this.instance.search(movieID);
+        assertEquals("2004", this.instance.getYear());
+    }
+
+    @Test
+    public void testGetPlot() throws JmdbException {
+        this.instance.search(movieID);
+        assertTrue(this.instance.getPlot().length() > 0);
+    }
+
+    @Test
+    public void testGetCast() throws JmdbException {
+        this.instance.search(movieID);
+        assertTrue(this.instance.getCast().size() > 0);
+    }
 //
 //    /**
 //     * Test of getDirectors method, of class Jmdb.

@@ -115,6 +115,7 @@ public class Jmdb {
 
         this.clean();
         this.response = this.getHttpResponse(this.criteria.get("host")+this.criteria.get("movieID_query")+movieID);
+        this.movieID = movieID;
         this.status = Status.OK;
     }
 
@@ -162,8 +163,8 @@ public class Jmdb {
     public String getTitle() {
         if (this.title == null) {
             Map<String, String> titleResult = Parser.parseTitle(this.response);
-            this.title      = titleResult.get("title");
-            this.year       = titleResult.get("year");
+            this.title = titleResult.get("title");
+            this.year = titleResult.get("year");
         }
         return this.title;
     }
@@ -554,13 +555,7 @@ public class Jmdb {
 
         public static String parsePlot(String data) {
             Jmdb.log.debug("Parsing movie plot");
-            String plot = null;
-            Matcher matcher = plotPattern.matcher(data);
-
-            if (matcher.find()) {
-                plot = htmlEntityDecode(matcher.group(1).replaceAll("<[^>]+>", "").trim());
-            }
-
+            String plot = Jsoup.parse(data).select("p[itemprop=description]").text();
             return plot;
         }
 
@@ -569,7 +564,6 @@ public class Jmdb {
             Set<Actor> cast = new HashSet<Actor>();
             Matcher matcher = castPattern.matcher(data);
             Actor actor;
-
             while (matcher.find()) {
                 actor = new Actor(Integer.parseInt(matcher.group(1)), htmlEntityDecode(matcher.group(2).trim()), htmlEntityDecode(matcher.group(4).trim()));
                 cast.add(actor);
@@ -1009,11 +1003,11 @@ public class Jmdb {
         }
 
         public String getTitle() {
-            return title;
+            return this.title;
         }
 
         public String getUrl() {
-            return url;
+            return this.url;
         }
 
         @Override
