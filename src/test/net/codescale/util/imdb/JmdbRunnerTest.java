@@ -3,21 +3,22 @@
  * and open the template in the editor.
  */
 
-package sk.mortality.util.imdb;
+package net.codescale.util.imdb;
 
 import java.util.Set;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import sk.mortality.util.imdb.Jmdb.Actor;
-import sk.mortality.util.imdb.Jmdb.Certificate;
-import sk.mortality.util.imdb.Jmdb.Director;
-import sk.mortality.util.imdb.Jmdb.OfficialSite;
-import sk.mortality.util.imdb.Jmdb.Rating;
-import sk.mortality.util.imdb.Jmdb.Status;
-import sk.mortality.util.imdb.Jmdb.Writer;
+import net.codescale.util.imdb.Jmdb.Actor;
+import net.codescale.util.imdb.Jmdb.Certificate;
+import net.codescale.util.imdb.Jmdb.Director;
+import net.codescale.util.imdb.Jmdb.OfficialSite;
+import net.codescale.util.imdb.Jmdb.Rating;
+import net.codescale.util.imdb.Jmdb.Status;
+import net.codescale.util.imdb.Jmdb.Writer;
 
 /**
  *

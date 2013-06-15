@@ -24,7 +24,7 @@
 //WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 //USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package sk.mortality.util.imdb;
+package net.codescale.util.imdb;
 
 import HTTPClient.CookieModule;
 import HTTPClient.HTTPConnection;
@@ -45,6 +45,10 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.log4j.Logger;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 /**
  *
@@ -100,7 +104,7 @@ public class Jmdb {
         this.criteria.put("user_agent"   , "Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.7.12) Gecko/20050915 Firefox/1.0.7");
         this.criteria.put("referer"      , "http://www.imdb.com/");
         this.criteria.put("movieID_query", "title/tt");
-        this.criteria.put("search_query" , "find?tt=on;mx=20;q=");
+        this.criteria.put("search_query" , "find?tt=on&mx=20&q=");
         this.criteria.put("query_str_enc", "UTF-8");
         this.criteria.put("timeout"      , "1500");
         this.criteria.put("auto_parse"   , "true");
@@ -109,15 +113,9 @@ public class Jmdb {
     public void search(int movieID) throws JmdbException {
         log.debug("MovieID search commenced");
 
-        this.clean();        
+        this.clean();
         this.response = this.getHttpResponse(this.criteria.get("host")+this.criteria.get("movieID_query")+movieID);
-        if (this.response.length() > 0 && this.response.indexOf("The URL (page) you requested could not be found.") == -1) {
-            this.status   = Status.OK;
-            this.movieID  = movieID;
-        } else {
-            log.debug("Received zero length response");
-            this.status = Status.KO;
-        }
+        this.status = Status.OK;
     }
 
     public void search(String query) throws JmdbException {
@@ -371,7 +369,7 @@ public class Jmdb {
         }
 
         resp = this.getHttpResponse(requestURL);
-        if (resp.indexOf("<title>IMDb Title Search</title>") != -1) {
+        if (resp.indexOf("<title>Find - IMDb</title>") != -1) {
             log.debug("Search page reached. Getting list of possible matches");
             matches  = Parser.parseTitles(resp);
         } else {
@@ -390,16 +388,17 @@ public class Jmdb {
         HTTPConnection connection = null;
 
         try {
-            URL requestURL  = new URL(url);
-            String host     = requestURL.getHost();
-            String file     = requestURL.getFile();
-            int port        = requestURL.getPort();
-            port            = (port == -1) ? 80 : port;
+            URL requestURL = new URL(url);
+            String host = requestURL.getHost();
+            String file = requestURL.getFile();
+            int port = requestURL.getPort();
+            port = (port == -1) ? 80 : port;
 
             log.debug("Getting HTTP response for: "+url);
             connection = new HTTPConnection(host, port);
             connection.setTimeout(Integer.parseInt(this.criteria.get("timeout")));
-            connection.setDefaultHeaders(new NVPair[] {new NVPair("User-Agent", this.criteria.get("user_agent")), new NVPair("Referer", this.criteria.get("referer"))});
+            connection.setDefaultHeaders(new NVPair[] {new NVPair("User-Agent", this.criteria.get("user_agent")),
+                                         new NVPair("Referer", this.criteria.get("referer"))});
             connection.setAllowUserInteraction(false);
             connection.removeModule(CookieModule.class);
             HTTPResponse resp = connection.Get(file);
@@ -497,7 +496,7 @@ public class Jmdb {
     private static class Parser {
 
         private static Pattern imdbIdPattern        = Pattern.compile("<link rel=\"canonical\" href=\"http://www.imdb.com/title/tt([0-9]+)/\" />");
-        private static Pattern titlesPattern        = Pattern.compile("title/tt([0-9]{7})/';\">([^<]+)?</a> \\(([0-9]+(\\/[^\\)]+)?)\\)");
+        private static Pattern titlesPattern        = Pattern.compile("title/tt([0-9]{7})/(\\?[^\"]*)\" >([^<]+)?</a> \\(([0-9]+(\\/[^\\)]+)?)\\)");
         private static Pattern titlePattern         = Pattern.compile("<title>(.+)[ ]\\(([0-9]{4})(\\/[^\\)]+)?\\)([^<]+)?</title>");
         private static Pattern plotPattern          = Pattern.compile("<h5>Plot:</h5>\\s<div class=\"info-content\">\\s(.+?)\\s<a class=\"tn15more inline\"");
         private static Pattern fullPlotPattern      = Pattern.compile("<p class=\"plotpar\">([^<]+)<i>");
@@ -531,12 +530,11 @@ public class Jmdb {
         public static Map<Integer, String> parseTitles(String data) {
             Jmdb.log.debug("Parsing possible title matches");
             Map<Integer, String> matches = new LinkedHashMap<Integer, String>();
-            Matcher matcher = titlesPattern.matcher(data);
-
-            while (matcher.find()) {
-                if (!matches.containsKey(matcher.group(1))) {
-                    matches.put(Integer.parseInt(matcher.group(1)), htmlEntityDecode(matcher.group(2)));
-                }
+            Document doc = Jsoup.parse(data);
+            Elements results = doc.select(".findSection").first().select(".findList .result_text");
+            for (Element result : results) {
+                matches.put(Integer.parseInt(result.select("a").attr("href").substring(9, 16)),
+                            result.text());
             }
             return matches;
         }

@@ -3,7 +3,7 @@
  * and open the template in the editor.
  */
 
-package sk.mortality.util.imdb;
+package net.codescale.util.imdb;
 
 /**
  *
@@ -21,8 +21,5 @@ public class JmdbException extends Exception {
 
     public JmdbException(String message) {
         super(message);
-    }
-
-    public JmdbException() {
     }
 }
